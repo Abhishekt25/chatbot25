@@ -16,7 +16,7 @@ const app = express();
 const httpServer = createServer(app);
 
 // ── Socket.io ─────────────────────────────────────────────────────────
-const io = new Server(httpServer, {
+export const io = new Server(httpServer, {
   cors: {
     origin: config.FRONTEND_URL,
     methods: ["GET", "POST"],
@@ -77,7 +77,14 @@ async function bootstrap() {
     await connectRedis();
 
     registerSocketHandlers(io);
-    startHandoffWorker(io);
+
+    try {
+      startHandoffWorker(io);
+    } catch (err) {
+      logger.warn("Handoff worker unavailable, continuing without it", {
+        err: err instanceof Error ? { message: err.message, stack: err.stack } : err,
+      });
+    }
 
     httpServer.listen(config.PORT, () => {
       logger.info(`🚀 Server running`, {
@@ -87,7 +94,9 @@ async function bootstrap() {
       });
     });
   } catch (err) {
-    logger.error("Failed to start server", { err });
+    logger.error("Failed to start server", {
+      err: err instanceof Error ? { message: err.message, stack: err.stack } : err,
+    });
     process.exit(1);
   }
 }

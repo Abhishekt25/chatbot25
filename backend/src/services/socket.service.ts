@@ -7,7 +7,7 @@ import { logger } from "../utils/logger.js";
 import {
   getAIResponse,
   detectEscalationKeywords,
-  buildGeminiHistory,
+  buildHistory,
 } from "./ai.service.js";
 import { queueHandoff } from "./queue.service.js";
 
@@ -125,7 +125,7 @@ export function registerSocketHandlers(io: Server) {
           take: 20,
         });
 
-        const history = buildGeminiHistory(
+        const history = buildHistory(
           recentMessages.filter((m) => m.id !== userMsg.id)
         );
 

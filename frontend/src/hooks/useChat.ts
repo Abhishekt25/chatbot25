@@ -66,6 +66,19 @@ export function useChat(sessionId: string, userId: string) {
         },
       ]);
     });
+    
+    socket.on("session_closed", ({ message }: { message: string }) => {
+      setStatus("CLOSED");
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `sys-${Date.now()}`,
+          role: "SYSTEM",
+          content: message,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+    });
 
     socket.on("no_agents_available", ({ message }: { message: string }) => {
       setStatus("BOT");
@@ -93,6 +106,7 @@ export function useChat(sessionId: string, userId: string) {
       socket.off("status_change");
       socket.off("agent_joined");
       socket.off("no_agents_available");
+      socket.off("session_closed");
       socket.off("error");
       socket.disconnect();
     };

@@ -1,10 +1,14 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import { config } from "../config/env.js";
 import { logger } from "../utils/logger.js";
 
-const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
+const client = new OpenAI({
+  apiKey: config.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1",
+});
 
 const SYSTEM_PROMPT = `You are a helpful and friendly customer support assistant.
+
 Guidelines:
 - Be concise, warm, and professional in every reply.
 - If the user is clearly frustrated, angry, or explicitly asks for a human agent or real person, respond ONLY with: [ESCALATE]
@@ -13,24 +17,39 @@ Guidelines:
 - Keep responses under 3 short paragraphs.
 - Do not reveal you are an AI unless directly asked.`;
 
-export type GeminiMessage = {
-  role: "user" | "model";
-  parts: { text: string }[];
+export type AIMessage = {
+  role: "user" | "assistant";
+  content: string;
 };
 
 export async function getAIResponse(
-  history: GeminiMessage[],
+  history: AIMessage[],
   userMessage: string
 ): Promise<{ text: string; shouldEscalate: boolean }> {
   try {
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-      systemInstruction: SYSTEM_PROMPT,
+    const completion = await client.chat.completions.create({
+      model: "openai/gpt-oss-120b",
+
+      messages: [
+        {
+          role: "system",
+          content: SYSTEM_PROMPT,
+        },
+
+        ...history,
+
+        {
+          role: "user",
+          content: userMessage,
+        },
+      ],
+
+      temperature: 0.7,
+      max_tokens: 500,
     });
 
-    const chat = model.startChat({ history });
-    const result = await chat.sendMessage(userMessage);
-    const text = result.response.text().trim();
+    const text =
+      completion.choices[0]?.message?.content?.trim() || "";
 
     if (text.includes("[ESCALATE]")) {
       return {
@@ -39,34 +58,69 @@ export async function getAIResponse(
       };
     }
 
-    return { text, shouldEscalate: false };
-  } catch (err) {
-    logger.error("Gemini API error", { err });
+    return {
+      text,
+      shouldEscalate: false,
+    };
+  } catch (err: any) {
+    console.error("========== GROQ ERROR ==========");
+    console.dir(err, { depth: null });
+
+    console.log("Message:", err?.message);
+    console.log("Status:", err?.status);
+
+    if (err?.response) {
+      console.log("Response:");
+      console.dir(err.response, { depth: null });
+    }
+
+    logger.error("Groq API error", { err });
+
     throw new Error("AI service temporarily unavailable");
   }
 }
 
-// Keyword-based escalation detection as a fast first check
+/**
+ * Fast keyword-based escalation detection.
+ */
 export function detectEscalationKeywords(message: string): boolean {
   const keywords = [
-    "human", "agent", "real person", "live person", "support staff",
-    "talk to someone", "speak to someone", "representative",
-    "not helping", "useless", "not useful", "this is terrible",
-    "refund", "complaint", "manager", "supervisor", "escalate",
-    "connect me", "transfer me",
+    "human",
+    "agent",
+    "real person",
+    "live person",
+    "support staff",
+    "talk to someone",
+    "speak to someone",
+    "representative",
+    "not helping",
+    "useless",
+    "not useful",
+    "this is terrible",
+    "refund",
+    "complaint",
+    "manager",
+    "supervisor",
+    "escalate",
+    "connect me",
+    "transfer me",
   ];
+
   const lower = message.toLowerCase();
+
   return keywords.some((kw) => lower.includes(kw));
 }
 
-// Convert DB messages to Gemini history format
-export function buildGeminiHistory(
+/**
+ * Converts DB messages into OpenAI/Groq chat history.
+ */
+export function buildHistory(
   messages: { role: string; content: string }[]
-): GeminiMessage[] {
+): AIMessage[] {
   return messages
     .filter((m) => m.role === "USER" || m.role === "AI")
     .map((m) => ({
-      role: m.role === "USER" ? "user" : "model",
-      parts: [{ text: m.content }],
+      role: m.role === "USER" ? "user" : "assistant",
+      content: m.content,
     }));
 }

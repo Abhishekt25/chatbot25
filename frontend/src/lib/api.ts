@@ -2,10 +2,13 @@
 // PRODUCTION: VITE_BACKEND_URL="https://xxx.up.railway.app" → full URL
 const BASE = import.meta.env.VITE_BACKEND_URL || "";
 
-export async function apiPost<T>(path: string, body: unknown): Promise<T> {
+export async function apiPost<T>(path: string, body: unknown, token?: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify(body),
   });
   const data = await res.json();

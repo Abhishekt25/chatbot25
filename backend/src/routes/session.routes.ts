@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
+import { io } from "../index.js";
 import { agentAuth } from "../middleware/auth.js";
 import {
   sendTranscriptEmail,
@@ -119,6 +120,11 @@ router.post(
           content: m.content,
           createdAt: m.createdAt,
         }));
+
+      // Notify user in real-time that chat is closed
+      io.to(`session:${req.params.sessionId}`).emit("session_closed", {
+        message: "This chat has been closed by the support agent. You can start a new conversation anytime.",
+      });
 
         // Non-blocking — don't make agent wait for email
         sendTranscriptEmail(

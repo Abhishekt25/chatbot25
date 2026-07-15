@@ -86,7 +86,6 @@ export function StartPage() {
           </div>
         ) : (
           <div style={{ background: "#E1F5EE", borderRadius: 16, padding: 24, border: "1px solid #9FE1CB", textAlign: "center" }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>✅</div>
             <h2 style={{ color: "#085041", margin: "0 0 8px" }}>
               Hi {session.userName}!
             </h2>

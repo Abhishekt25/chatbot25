@@ -90,6 +90,11 @@ export function ChatWidget({ sessionId, userId }: Props) {
     if (open) setTimeout(() => inputRef.current?.focus(), 100);
   }, [open]);
 
+  // Auto-open chat when agent closes it so user sees the notification
+  useEffect(() => {
+    if (status === "CLOSED") setOpen(true);
+  }, [status]);
+
   function handleSend() {
     const trimmed = input.trim();
     if (!trimmed || status === "CLOSED") return;
@@ -105,15 +110,14 @@ export function ChatWidget({ sessionId, userId }: Props) {
   }
 
   const statusConfig = {
-    BOT: { label: "AI Assistant · Online", dot: "#0F6E56" },
-    PENDING_HUMAN: { label: "Connecting to agent...", dot: "#BA7517" },
-    HUMAN: { label: "Live with support agent", dot: "#0F6E56" },
-    CLOSED: { label: "Chat closed", dot: "#888780" },
+    BOT:           { label: "AI Assistant · Online",      dot: "#0F6E56" },
+    PENDING_HUMAN: { label: "Connecting to agent...",     dot: "#BA7517" },
+    HUMAN:         { label: "Live with support agent",    dot: "#0F6E56" },
+    CLOSED:        { label: "Chat closed",                dot: "#888780" },
   };
   const { label: statusLabel, dot: dotColor } = statusConfig[status];
 
   const isClosed = status === "CLOSED";
-  const isDisabled = isClosed || !connected;
 
   return (
     <>
@@ -139,8 +143,9 @@ export function ChatWidget({ sessionId, userId }: Props) {
             border: "1px solid #D3D1C7",
             animation: "chatSlideUp 0.2s ease",
           }}>
-            {/* Header */}
-            <div style={{ background: "#185FA5", padding: "14px 16px", flexShrink: 0 }}>
+
+            {/* ── Header ─────────────────────────────────────── */}
+            <div style={{ background: isClosed ? "#5F5E5A" : "#185FA5", padding: "14px 16px", flexShrink: 0, transition: "background 0.3s" }}>
               <div style={{ color: "#fff", fontWeight: 600, fontSize: 15 }}>
                 Support Chat
               </div>
@@ -150,7 +155,7 @@ export function ChatWidget({ sessionId, userId }: Props) {
               </div>
             </div>
 
-            {/* Messages */}
+            {/* ── Messages ───────────────────────────────────── */}
             <div style={{ flex: 1, overflowY: "auto", padding: "14px 12px", background: "#FAFAF9" }}>
               {messages.length === 0 && !isTyping && (
                 <div style={{ textAlign: "center", color: "#888780", fontSize: 14, marginTop: 60 }}>
@@ -168,7 +173,7 @@ export function ChatWidget({ sessionId, userId }: Props) {
               <div ref={bottomRef} />
             </div>
 
-            {/* Talk to human link */}
+            {/* ── Talk to human link (only when AI is active) ── */}
             {status === "BOT" && (
               <div style={{ padding: "6px 14px", borderTop: "1px solid #EDEBE6", background: "#fff", flexShrink: 0 }}>
                 <button
@@ -183,48 +188,79 @@ export function ChatWidget({ sessionId, userId }: Props) {
               </div>
             )}
 
-            {/* Input */}
-            <div style={{ padding: "10px 12px", borderTop: "1px solid #EDEBE6", background: "#fff", display: "flex", gap: 8, flexShrink: 0 }}>
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKey}
-                placeholder={isClosed ? "Chat closed" : "Type a message…"}
-                disabled={isDisabled}
-                style={{
-                  flex: 1, padding: "9px 12px", borderRadius: 8,
-                  border: "1px solid #D3D1C7", fontSize: 14, outline: "none",
-                  background: isDisabled ? "#F5F5F3" : "#fff", color: "#2C2C2A",
-                }}
-              />
-              <button
-                onClick={handleSend}
-                disabled={isDisabled || !input.trim()}
-                style={{
-                  background: "#185FA5", color: "#fff", border: "none",
-                  borderRadius: 8, padding: "9px 16px", cursor: "pointer",
-                  fontSize: 14, fontWeight: 500,
-                  opacity: isDisabled || !input.trim() ? 0.45 : 1,
-                  transition: "opacity 0.15s",
-                }}
-              >
-                Send
-              </button>
-            </div>
+            {/* ── CLOSED: banner + Start New Chat ────────────── */}
+            {isClosed && (
+              <div style={{
+                padding: "18px 16px", borderTop: "1px solid #EDEBE6",
+                background: "#E1F5EE", flexShrink: 0, textAlign: "center",
+              }}>
+                <div style={{ fontSize: 13, color: "#085041", fontWeight: 500, marginBottom: 4 }}>
+                  Chat closed by support agent
+                </div>
+                <div style={{ fontSize: 12, color: "#0F6E56", marginBottom: 14, lineHeight: 1.5 }}>
+                  Your transcript has been sent to your email.
+                </div>
+                <button
+                  onClick={() => window.location.reload()}
+                  style={{
+                    background: "#185FA5", color: "#fff", border: "none",
+                    borderRadius: 8, padding: "10px 20px", cursor: "pointer",
+                    fontSize: 13, fontWeight: 600, width: "100%",
+                  }}
+                >
+                  💬 Start New Chat
+                </button>
+              </div>
+            )}
+
+            {/* ── Input (hidden when closed) ──────────────────── */}
+            {!isClosed && (
+              <div style={{
+                padding: "10px 12px", borderTop: "1px solid #EDEBE6",
+                background: "#fff", display: "flex", gap: 8, flexShrink: 0,
+              }}>
+                <input
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKey}
+                  placeholder={!connected ? "Connecting..." : "Type a message…"}
+                  disabled={!connected}
+                  style={{
+                    flex: 1, padding: "9px 12px", borderRadius: 8,
+                    border: "1px solid #D3D1C7", fontSize: 14, outline: "none",
+                    background: !connected ? "#F5F5F3" : "#fff", color: "#2C2C2A",
+                  }}
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={!connected || !input.trim()}
+                  style={{
+                    background: "#185FA5", color: "#fff", border: "none",
+                    borderRadius: 8, padding: "9px 16px", cursor: "pointer",
+                    fontSize: 14, fontWeight: 500,
+                    opacity: !connected || !input.trim() ? 0.45 : 1,
+                    transition: "opacity 0.15s",
+                  }}
+                >
+                  Send
+                </button>
+              </div>
+            )}
+
           </div>
         )}
 
-        {/* Floating button */}
+        {/* ── Floating button ─────────────────────────────────── */}
         <button
           onClick={() => setOpen((o) => !o)}
           style={{
             width: 56, height: 56, borderRadius: "50%",
-            background: "#185FA5", color: "#fff", border: "none",
-            cursor: "pointer", fontSize: 22,
+            background: isClosed ? "#5F5E5A" : "#185FA5",
+            color: "#fff", border: "none", cursor: "pointer", fontSize: 22,
             boxShadow: "0 4px 16px rgba(24,95,165,0.4)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            transition: "transform 0.15s",
+            transition: "background 0.3s",
           }}
           title={open ? "Close chat" : "Open chat"}
         >

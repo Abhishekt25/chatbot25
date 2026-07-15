@@ -11,6 +11,7 @@ export default defineConfig({
     host: true, // needed for Docker
     proxy: {
       // Only active in local dev (when VITE_BACKEND_URL is not set)
+      
       "/api": {
         target: "http://backend:4000",
         changeOrigin: true,
@@ -21,5 +22,8 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+  build: {
+    sourcemap:false,
   },
 });

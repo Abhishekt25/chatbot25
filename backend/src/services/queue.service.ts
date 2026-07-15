@@ -6,7 +6,7 @@ import { sendAgentAssignedEmail } from "./email.service.js";
 import { logger } from "../utils/logger.js";
 
 export const handoffQueue = new Queue("handoff", {
-  connection: redis,
+  connection: redis as unknown as import("bullmq").ConnectionOptions,
   defaultJobOptions: {
     attempts: 5,
     backoff: { type: "exponential", delay: 3000 },
@@ -29,9 +29,10 @@ export async function queueHandoff(
 }
 
 export function startHandoffWorker(io: Server) {
-  const worker = new Worker<HandoffJob>(
-    "handoff",
-    async (job: Job<HandoffJob>) => {
+  try {
+    const worker = new Worker<HandoffJob>(
+      "handoff",
+      async (job: Job<HandoffJob>) => {
       const { sessionId, userMessage } = job.data;
 
       // Find the least-busy online agent
@@ -72,10 +73,13 @@ export function startHandoffWorker(io: Server) {
         agentName: agent.name,
       });
     },
-    { connection: redis, concurrency: 10 }
-  );
+      {
+        connection: redis as unknown as import("bullmq").ConnectionOptions,
+        concurrency: 10,
+      }
+    );
 
-  worker.on("failed", (job, err) => {
+    worker.on("failed", (job, err) => {
     logger.error("Handoff job failed", {
       jobId: job?.id,
       attempt: job?.attemptsMade,
@@ -92,10 +96,16 @@ export function startHandoffWorker(io: Server) {
     }
   });
 
-  worker.on("completed", (job) => {
-    logger.info("Handoff job completed", { jobId: job.id });
-  });
+    worker.on("completed", (job) => {
+      logger.info("Handoff job completed", { jobId: job.id });
+    });
 
-  logger.info("✅ Handoff worker started");
-  return worker;
+    logger.info("✅ Handoff worker started");
+    return worker;
+  } catch (err) {
+    logger.error("Failed to start handoff worker; continuing without queue processing", {
+      err: err instanceof Error ? { message: err.message, stack: err.stack } : err,
+    });
+    return null;
+  }
 }
