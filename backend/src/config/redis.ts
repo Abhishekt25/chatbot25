@@ -2,25 +2,16 @@ import Redis from "ioredis";
 import { config } from "./env.js";
 import { logger } from "../utils/logger.js";
 
-// Railway Redis uses rediss:// (TLS), local Docker uses redis://
-// ioredis handles both automatically from the URL
 export const redis = new Redis(config.REDIS_URL, {
-  maxRetriesPerRequest: null,
-  lazyConnect: true,
+  maxRetriesPerRequest: 3,
   tls: config.REDIS_URL.startsWith("rediss://") ? {} : undefined,
 });
 
 redis.on("connect", () => logger.info("Redis connected"));
 redis.on("error", (err) => logger.error("Redis error", { message: err.message }));
 
+// No connectRedis function needed — ioredis auto-connects from URL
 export async function connectRedis() {
-  if (redis.status === "ready") {
-    return;
-  }
-
-  if (redis.status === "connecting") {
-    return;
-  }
-
-  await redis.connect();
+  // Already connected via constructor — nothing to do
+  return Promise.resolve();
 }
