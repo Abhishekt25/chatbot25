@@ -1,12 +1,12 @@
 import { Queue, Worker, Job } from "bullmq";
 import { Server } from "socket.io";
-import { redis } from "../config/redis.js";
+import { redis, bullMQConnection } from "../config/redis.js";
 import { prisma } from "../config/prisma.js";
 import { sendAgentAssignedEmail } from "./email.service.js";
 import { logger } from "../utils/logger.js";
 
 export const handoffQueue = new Queue("handoff", {
-  connection: redis as unknown as import("bullmq").ConnectionOptions,
+ connection: bullMQConnection,
   defaultJobOptions: {
     attempts: 5,
     backoff: { type: "exponential", delay: 3000 },
@@ -74,7 +74,7 @@ export function startHandoffWorker(io: Server) {
       });
     },
       {
-        connection: redis as unknown as import("bullmq").ConnectionOptions,
+        connection: bullMQConnection,
         concurrency: 10,
       }
     );
