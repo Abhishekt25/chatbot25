@@ -2,16 +2,25 @@ import Redis from "ioredis";
 import { config } from "./env.js";
 import { logger } from "../utils/logger.js";
 
+const tlsOptions = config.REDIS_URL.startsWith("rediss://") ? {} : undefined;
+
+// General purpose Redis client
 export const redis = new Redis(config.REDIS_URL, {
   maxRetriesPerRequest: 3,
-  tls: config.REDIS_URL.startsWith("rediss://") ? {} : undefined,
+  tls: tlsOptions,
 });
 
 redis.on("connect", () => logger.info("Redis connected"));
 redis.on("error", (err) => logger.error("Redis error", { message: err.message }));
 
-// No connectRedis function needed — ioredis auto-connects from URL
+// BullMQ connection options — uses URL string directly
+// so BullMQ creates its own ioredis instance internally
+export const bullMQConnection = {
+  url: config.REDIS_URL,
+  tls: tlsOptions,
+  maxRetriesPerRequest: null,
+} as const;
+
 export async function connectRedis() {
-  // Already connected via constructor — nothing to do
   return Promise.resolve();
 }
