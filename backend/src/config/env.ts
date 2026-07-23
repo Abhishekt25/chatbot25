@@ -40,7 +40,7 @@ const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
   console.error(
-    "❌ Invalid environment variables:\n",
+    "Invalid environment variables:\n",
     JSON.stringify(parsed.error.flatten().fieldErrors, null, 2)
   );
   process.exit(1);

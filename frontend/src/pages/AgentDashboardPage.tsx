@@ -78,7 +78,7 @@ export function AgentDashboardPage({ token, agent, onOpenChat, onLogout }: Props
       {newChats.map(nc => (
         <div key={nc.sessionId} style={{ background: "#0F6E56", color: "#fff", padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <strong>🔔 New chat assigned!</strong>
+            <strong>New chat assigned!</strong>
             <span style={{ marginLeft: 10, fontSize: 13, opacity: 0.9 }}>"{nc.userMessage.slice(0, 60)}..."</span>
           </div>
           <div style={{ display: "flex", gap: 8 }}>

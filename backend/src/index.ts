@@ -72,7 +72,7 @@ app.get("/csat/:sessionId/:score", async (req, res) => {
 async function bootstrap() {
   try {
     await connectDB();
-    logger.info("✅ Database connected");
+    logger.info("Database connected");
 
     await connectRedis();
 
@@ -87,7 +87,7 @@ async function bootstrap() {
     }
 
     httpServer.listen(config.PORT, () => {
-      logger.info(`🚀 Server running`, {
+      logger.info(`Server running`, {
         port: config.PORT,
         env: config.NODE_ENV,
         frontend: config.FRONTEND_URL,

@@ -100,7 +100,7 @@ export function startHandoffWorker(io: Server) {
       logger.info("Handoff job completed", { jobId: job.id });
     });
 
-    logger.info("✅ Handoff worker started");
+    logger.info("Handoff worker started");
     return worker;
   } catch (err) {
     logger.error("Failed to start handoff worker; continuing without queue processing", {

@@ -159,7 +159,7 @@ export function ChatWidget({ sessionId, userId }: Props) {
             <div style={{ flex: 1, overflowY: "auto", padding: "14px 12px", background: "#FAFAF9" }}>
               {messages.length === 0 && !isTyping && (
                 <div style={{ textAlign: "center", color: "#888780", fontSize: 14, marginTop: 60 }}>
-                  👋 Hi! How can we help you today?
+                   Hi! How can we help you today?
                 </div>
               )}
               {messages.map((m) => <MessageBubble key={m.id} msg={m} />)}

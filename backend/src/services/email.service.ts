@@ -17,7 +17,7 @@ transporter.verify((err) => {
   if (err) {
     logger.error("SMTP connection failed", { message: err.message });
   } else {
-    logger.info("✅ SMTP ready — Brevo connected");
+    logger.info("SMTP ready — Brevo connected");
   }
 });
 
@@ -158,7 +158,7 @@ export async function sendCSATEmail(
     await transporter.sendMail({
       from: `"${config.FROM_NAME}" <${config.FROM_EMAIL}>`,
       to: `"${toName}" <${toEmail}>`,
-      subject: "Rate your support experience ⭐",
+      subject: "Rate your support experience",
       html: csatHTML(sessionId),
     });
     logger.info("CSAT email sent", { toEmail, sessionId });
@@ -177,7 +177,7 @@ export async function sendAgentAssignedEmail(
     await transporter.sendMail({
       from: `"${config.FROM_NAME}" <${config.FROM_EMAIL}>`,
       to: `"${agentName}" <${agentEmail}>`,
-      subject: "🔔 New chat assigned to you",
+      subject: "New chat assigned to you",
       html: agentAlertHTML(agentName, sessionId, lastMessage),
     });
     logger.info("Agent alert email sent", { agentEmail, sessionId });

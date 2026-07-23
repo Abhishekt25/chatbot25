@@ -137,7 +137,7 @@ export function AgentChatPage({ sessionId, token, agent, onBack }: Props) {
       {/* Closed banner */}
       {closed && (
         <div style={{ background: "#E1F5EE", padding: "12px 20px", textAlign: "center", color: "#085041", fontSize: 14, fontWeight: 500 }}>
-          ✅ Chat closed — transcript & CSAT email sent to user.
+           Chat closed — transcript & CSAT email sent to user.
         </div>
       )}
 
