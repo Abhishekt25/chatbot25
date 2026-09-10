@@ -16,9 +16,10 @@ const envSchema = z.object({
   // JWT
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 chars"),
 
-  // GROQ AI
-  GROQ_API_KEY: z.string().min(1, "GROQ_API_KEY is required"),
-
+  // // GROQ AI
+  // GROQ_API_KEY: z.string().min(1, "GROQ_API_KEY is required"),
+  // OpenRouter AI
+  OPENROUTER_API_KEY: z.string().min(1, "OPENROUTER_API_KEY is required"),
   // Brevo SMTP
   BREVO_SMTP_HOST: z.string().default("smtp-relay.brevo.com"),
   BREVO_SMTP_PORT: z.coerce.number().default(587),

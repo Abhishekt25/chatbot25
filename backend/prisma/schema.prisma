@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
 }
 
 model User {
@@ -40,7 +42,8 @@ model Session {
   messages Message[]
 
   @@index([status])
-  @@index([userId])             
+  @@index([userId])
+  @@index([agentId])
   @@index([updatedAt])
 }
 
@@ -54,6 +57,18 @@ model Message {
   session Session @relation(fields: [sessionId], references: [id])
 
   @@index([sessionId])
+  @@index([createdAt])
+  @@index([sessionId, createdAt])
+}
+
+// RAG — stores document chunks with embeddings
+model Document {
+  id        String                  @id @default(uuid())
+  content   String                  // the actual text chunk
+  metadata  Json                    // category, source, question etc
+  embedding Unsupported("vector(384)")? // HuggingFace embedding dimension
+  createdAt DateTime                @default(now())
+
   @@index([createdAt])
 }
 

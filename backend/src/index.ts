@@ -11,6 +11,7 @@ import { registerSocketHandlers } from "./services/socket.service.js";
 import { startHandoffWorker } from "./services/queue.service.js";
 import authRoutes from "./routes/auth.routes.js";
 import sessionRoutes from "./routes/session.routes.js";
+import ingestRoutes from "./routes/ingest.routes.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -49,6 +50,7 @@ app.get("/health", (_req, res) => {
 // ── Routes ────────────────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
 app.use("/api/sessions", sessionRoutes);
+app.use("/api/ingest", ingestRoutes);
 
 // CSAT from email link → redirect to frontend with score
 app.get("/csat/:sessionId/:score", async (req, res) => {

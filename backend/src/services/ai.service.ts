@@ -3,117 +3,70 @@ import { config } from "../config/env.js";
 import { logger } from "../utils/logger.js";
 
 const client = new OpenAI({
-  apiKey: config.GROQ_API_KEY,
-  baseURL: "https://api.groq.com/openai/v1",
+  apiKey: config.OPENROUTER_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
+  defaultHeaders: {
+    "HTTP-Referer": config.FRONTEND_URL,
+    "X-Title": "Support Chatbot",
+  },
 });
-
-const SYSTEM_PROMPT = `You are a helpful and friendly customer support assistant.
-
-Guidelines:
-- We are a full stack development company
-- We build modern web applications using React, Node.js, Next.js, and TypeScript
-- We specialize in REST APIs, database design, cloud deployments, and scalable backend systems
-- We work with PostgreSQL, MongoDB, Redis, and Docker
-- We also build web apps and real-time applications
-- For project quotes, timelines, or specific requirements, a human agent can assist`;
 
 export type AIMessage = {
   role: "user" | "assistant";
   content: string;
 };
 
-export async function getAIResponse(
+// ─── Core AI call — used by LangGraph nodes ───────────────────────────────────
+
+export async function callAI(
   history: AIMessage[],
-  userMessage: string
+  userMessage: string,
+  systemPrompt: string
 ): Promise<{ text: string; shouldEscalate: boolean }> {
   try {
     const completion = await client.chat.completions.create({
-      model: "openai/gpt-oss-120b",
-
+      model: "meta-llama/llama-3.1-8b-instruct",
       messages: [
-        {
-          role: "system",
-          content: SYSTEM_PROMPT,
-        },
-
+        { role: "system", content: systemPrompt },
         ...history,
-
-        {
-          role: "user",
-          content: userMessage,
-        },
+        { role: "user", content: userMessage },
       ],
-
       temperature: 0.7,
       max_tokens: 500,
     });
 
-    const text =
-      completion.choices[0]?.message?.content?.trim() || "";
+    const text = completion.choices[0]?.message?.content?.trim() || "";
 
     if (text.includes("[ESCALATE]")) {
-      return {
-        text: "I'll connect you with a human agent right away. Please hold on for a moment — someone will be with you shortly.",
-        shouldEscalate: true,
-      };
+      return { text: "", shouldEscalate: true };
     }
 
-    return {
-      text,
-      shouldEscalate: false,
-    };
+    return { text, shouldEscalate: false };
   } catch (err: any) {
-    console.error("========== GROQ ERROR ==========");
-    console.dir(err, { depth: null });
-
-    console.log("Message:", err?.message);
-    console.log("Status:", err?.status);
-
-    if (err?.response) {
-      console.log("Response:");
-      console.dir(err.response, { depth: null });
-    }
-
-    logger.error("Groq API error", { err });
-
+    logger.error("OpenRouter API error", {
+      message: err?.message,
+      status: err?.status,
+    });
     throw new Error("AI service temporarily unavailable");
   }
 }
 
-/**
- * Fast keyword-based escalation detection.
- */
+// ─── Keyword-based escalation detection ──────────────────────────────────────
+
 export function detectEscalationKeywords(message: string): boolean {
   const keywords = [
-    "human",
-    "agent",
-    "real person",
-    "live person",
-    "support staff",
-    "talk to someone",
-    "speak to someone",
-    "representative",
-    "not helping",
-    "useless",
-    "not useful",
-    "this is terrible",
-    "refund",
-    "complaint",
-    "manager",
-    "supervisor",
-    "escalate",
-    "connect me",
-    "transfer me",
+    "human", "agent", "real person", "live person", "support staff",
+    "talk to someone", "speak to someone", "representative",
+    "not helping", "useless", "not useful", "this is terrible",
+    "refund", "complaint", "manager", "supervisor", "escalate",
+    "connect me", "transfer me",
   ];
-
   const lower = message.toLowerCase();
-
   return keywords.some((kw) => lower.includes(kw));
 }
 
-/**
- * Converts DB messages into OpenAI/Groq chat history.
- */
+// ─── Build chat history from DB messages ──────────────────────────────────────
+
 export function buildHistory(
   messages: { role: string; content: string }[]
 ): AIMessage[] {

@@ -1,0 +1,92 @@
+[
+  {
+    "id": "faq-001",
+    "category": "Orders",
+    "question": "How do I track my order?",
+    "answer": "You can track your order by visiting our website and clicking on 'Track Order' in the top menu. Enter your order number and email address to see real-time updates. You will also receive tracking emails automatically once your order ships. Tracking usually activates within 24 hours of shipment."
+  },
+  {
+    "id": "faq-002",
+    "category": "Orders",
+    "question": "Can I cancel or modify my order?",
+    "answer": "You can cancel or modify your order within 2 hours of placing it. After 2 hours, the order goes into processing and cannot be changed. To cancel, go to My Orders, select the order, and click Cancel. For modifications, please contact our support team immediately via chat or email at support@company.com."
+  },
+  {
+    "id": "faq-003",
+    "category": "Returns",
+    "question": "What is your return policy?",
+    "answer": "We offer a 30-day return policy for all products. Items must be unused, in original packaging, and with all tags attached. To start a return, go to My Orders, select the item, and click Return. We will send you a prepaid return label by email. Refunds are processed within 5-7 business days after we receive the item."
+  },
+  {
+    "id": "faq-004",
+    "category": "Returns",
+    "question": "How long does a refund take?",
+    "answer": "Once we receive your returned item, refunds take 5-7 business days to process. You will receive a confirmation email when the refund is initiated. After that, it may take an additional 3-5 business days for the amount to appear in your account depending on your bank. If you paid by credit card, the refund goes back to the same card."
+  },
+  {
+    "id": "faq-005",
+    "category": "Shipping",
+    "question": "What shipping options do you offer?",
+    "answer": "We offer three shipping options: Standard Shipping (5-7 business days, free on orders above Rs 499), Express Shipping (2-3 business days, Rs 99), and Same Day Delivery (available in select cities, Rs 199). International shipping is available to 50+ countries with delivery in 10-15 business days."
+  },
+  {
+    "id": "faq-006",
+    "category": "Shipping",
+    "question": "Do you ship internationally?",
+    "answer": "Yes, we ship to over 50 countries internationally. International shipping takes 10-15 business days. Shipping charges vary by country and are calculated at checkout. Please note that international orders may be subject to customs duties and import taxes which are the responsibility of the customer."
+  },
+  {
+    "id": "faq-007",
+    "category": "Payment",
+    "question": "What payment methods do you accept?",
+    "answer": "We accept all major payment methods including Credit Cards (Visa, Mastercard, Amex), Debit Cards, Net Banking, UPI (Google Pay, PhonePe, Paytm), EMI options on orders above Rs 3000, and Cash on Delivery in select areas. All payments are secured with 256-bit SSL encryption."
+  },
+  {
+    "id": "faq-008",
+    "category": "Payment",
+    "question": "Is it safe to use my credit card on your website?",
+    "answer": "Yes, absolutely. We use 256-bit SSL encryption for all transactions. We are PCI DSS compliant and do not store your full card details on our servers. All payments are processed through secure payment gateways. You will see a padlock icon in your browser address bar confirming the secure connection."
+  },
+  {
+    "id": "faq-009",
+    "category": "Account",
+    "question": "How do I reset my password?",
+    "answer": "To reset your password, click on 'Forgot Password' on the login page. Enter your registered email address and we will send you a password reset link. The link is valid for 24 hours. Click the link, enter your new password, and confirm it. If you do not receive the email, check your spam folder or contact our support team."
+  },
+  {
+    "id": "faq-010",
+    "category": "Account",
+    "question": "How do I update my address or contact details?",
+    "answer": "To update your address or contact details, log in to your account and go to My Profile. Click on Edit Profile to update your name, phone number, or email. To manage delivery addresses, go to My Addresses where you can add, edit, or delete saved addresses. Changes are saved immediately."
+  },
+  {
+    "id": "faq-011",
+    "category": "Products",
+    "question": "How do I know if a product is in stock?",
+    "answer": "Product availability is shown on each product page. If an item is in stock, you will see an Add to Cart button. If it is out of stock, you will see an Out of Stock message with an option to get notified when it is back. You can click Notify Me and enter your email to receive an alert when the product is available again."
+  },
+  {
+    "id": "faq-012",
+    "category": "Products",
+    "question": "Are your products authentic and genuine?",
+    "answer": "Yes, all products sold on our platform are 100% authentic and sourced directly from authorized manufacturers and distributors. We have strict quality control measures and work only with verified sellers. Every product comes with an official manufacturer warranty. If you ever receive a product you suspect is not genuine, contact us immediately for a full refund."
+  },
+  {
+    "id": "faq-013",
+    "category": "Warranty",
+    "question": "What warranty do your products come with?",
+    "answer": "Warranty varies by product category. Electronics come with a 1-year manufacturer warranty. Appliances come with a 2-year warranty. Clothing and accessories are covered by our 30-day return policy but do not carry an additional warranty. Warranty claims can be raised through our website under My Orders by selecting the product and clicking Raise Warranty Claim."
+  },
+  {
+    "id": "faq-014",
+    "category": "Offers",
+    "question": "How do I apply a coupon code?",
+    "answer": "To apply a coupon code, add items to your cart and proceed to checkout. On the checkout page, you will see a field that says Enter Coupon Code. Type or paste your code and click Apply. The discount will be reflected in your order total. Coupon codes are case-sensitive and can only be used once per account unless stated otherwise."
+  },
+  {
+    "id": "faq-015",
+    "category": "Support",
+    "question": "How can I contact customer support?",
+    "answer": "You can reach our customer support team through multiple channels: Live Chat on our website (available 9 AM to 9 PM Monday to Saturday), Email at support@company.com (response within 24 hours), Phone at 1800-123-4567 (toll free, 9 AM to 6 PM weekdays), or WhatsApp at +91-98765-43210. For urgent issues, live chat is the fastest option."
+  }
+]

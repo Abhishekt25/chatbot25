@@ -4,18 +4,15 @@ import { prisma } from "../config/prisma.js";
 import { redis } from "../config/redis.js";
 import { config } from "../config/env.js";
 import { logger } from "../utils/logger.js";
-import {
-  getAIResponse,
-  detectEscalationKeywords,
-  buildHistory,
-} from "./ai.service.js";
+import { buildHistory, detectEscalationKeywords } from "./ai.service.js";
+import { runGraph } from "./graph.service.js";  // ← LangGraph
 import { queueHandoff } from "./queue.service.js";
 
 export function registerSocketHandlers(io: Server) {
   io.on("connection", (socket: Socket) => {
     logger.debug("Socket connected", { id: socket.id });
 
-    // ── USER: join their session room ──────────────────────────────────
+    // ── USER: join session ────────────────────────────────────────────
     socket.on("join_session", async ({ sessionId, userId }) => {
       try {
         const session = await prisma.session.findUnique({
@@ -24,11 +21,7 @@ export function registerSocketHandlers(io: Server) {
             messages: { orderBy: { createdAt: "asc" }, take: 50 },
           },
         });
-
-        if (!session) {
-          socket.emit("error", { message: "Session not found" });
-          return;
-        }
+        if (!session) { socket.emit("error", { message: "Session not found" }); return; }
 
         socket.join(`session:${sessionId}`);
         socket.data.sessionId = sessionId;
@@ -39,7 +32,6 @@ export function registerSocketHandlers(io: Server) {
           messages: session.messages,
           status: session.status,
         });
-
         logger.info("User joined session", { sessionId });
       } catch (err) {
         logger.error("join_session error", { err });
@@ -47,63 +39,39 @@ export function registerSocketHandlers(io: Server) {
       }
     });
 
-    // ── AGENT: go online (dashboard loaded) ───────────────────────────
+    // ── AGENT: go online ──────────────────────────────────────────────
     socket.on("agent_online", async ({ token }) => {
       try {
-        const payload = jwt.verify(token, config.JWT_SECRET) as {
-          agentId: string;
-        };
-
+        const payload = jwt.verify(token, config.JWT_SECRET) as { agentId: string };
         socket.join(`agent:${payload.agentId}`);
         socket.data.agentId = payload.agentId;
         socket.data.role = "agent";
-
-        await prisma.agent.update({
-          where: { id: payload.agentId },
-          data: { isOnline: true },
-        });
+        await prisma.agent.update({ where: { id: payload.agentId }, data: { isOnline: true } });
         await redis.sadd("online_agents", payload.agentId);
-
         logger.info("Agent online", { agentId: payload.agentId });
-      } catch {
-        socket.emit("error", { message: "Unauthorized" });
-      }
+      } catch { socket.emit("error", { message: "Unauthorized" }); }
     });
 
-    // ── AGENT: join a specific session to chat ─────────────────────────
+    // ── AGENT: join specific session ──────────────────────────────────
     socket.on("agent_join_session", async ({ token, sessionId }) => {
       try {
-        const payload = jwt.verify(token, config.JWT_SECRET) as {
-          agentId: string;
-        };
-
+        jwt.verify(token, config.JWT_SECRET);
         socket.join(`session:${sessionId}`);
         socket.data.sessionId = sessionId;
-
-        // Send history to agent
         const messages = await prisma.message.findMany({
           where: { sessionId },
           orderBy: { createdAt: "asc" },
         });
         socket.emit("session_history", { messages });
-
-        logger.info("Agent joined session", {
-          agentId: payload.agentId,
-          sessionId,
-        });
-      } catch {
-        socket.emit("error", { message: "Unauthorized" });
-      }
+      } catch { socket.emit("error", { message: "Unauthorized" }); }
     });
 
-    // ── USER: send a message ───────────────────────────────────────────
+    // ── USER: send message → LangGraph processes it ───────────────────
     socket.on("user_message", async ({ sessionId, content }) => {
       try {
         if (!content?.trim()) return;
 
-        const session = await prisma.session.findUnique({
-          where: { id: sessionId },
-        });
+        const session = await prisma.session.findUnique({ where: { id: sessionId } });
         if (!session || session.status === "CLOSED") return;
 
         // Save user message
@@ -112,29 +80,28 @@ export function registerSocketHandlers(io: Server) {
         });
         io.to(`session:${sessionId}`).emit("new_message", userMsg);
 
-        // If human agent is already handling — stop here, agent replies manually
+        // If human agent already handling — stop
         if (session.status === "HUMAN") return;
 
-        // Quick keyword check first (faster than AI call)
-        const keywordEscalate = detectEscalationKeywords(content);
-
-        // Get last 20 messages for AI context
+        // Get chat history for context
         const recentMessages = await prisma.message.findMany({
           where: { sessionId },
           orderBy: { createdAt: "asc" },
           take: 20,
         });
-
         const history = buildHistory(
-          recentMessages.filter((m) => m.id !== userMsg.id)
+          recentMessages.filter((m: { id: string; role: string; content: string }) => m.id !== userMsg.id)
         );
 
-        const { text: aiText, shouldEscalate: aiEscalate } =
-          await getAIResponse(history, content);
+        // ── RUN LANGGRAPH ──
+        // This replaces the simple getAIResponse() call
+        // Graph: retrieve → grade → rag_answer/general_answer → escalate?
+        const { text: aiText, shouldEscalate } = await runGraph(
+          content,
+          history
+        );
 
-        const shouldEscalate = keywordEscalate || aiEscalate;
-
-        // Save and send AI reply
+        // Save AI reply
         const aiMsg = await prisma.message.create({
           data: { sessionId, role: "AI", content: aiText },
         });
@@ -146,9 +113,7 @@ export function registerSocketHandlers(io: Server) {
             where: { id: sessionId },
             data: { status: "PENDING_HUMAN" },
           });
-          io.to(`session:${sessionId}`).emit("status_change", {
-            status: "PENDING_HUMAN",
-          });
+          io.to(`session:${sessionId}`).emit("status_change", { status: "PENDING_HUMAN" });
           await queueHandoff(sessionId, content);
         }
       } catch (err) {
@@ -157,12 +122,10 @@ export function registerSocketHandlers(io: Server) {
       }
     });
 
-    // ── USER: manually click "Talk to human" button ────────────────────
+    // ── USER: request human manually ──────────────────────────────────
     socket.on("request_human", async ({ sessionId }) => {
       try {
-        const session = await prisma.session.findUnique({
-          where: { id: sessionId },
-        });
+        const session = await prisma.session.findUnique({ where: { id: sessionId } });
         if (!session || session.status !== "BOT") return;
 
         const lastUserMsg = await prisma.message.findFirst({
@@ -179,31 +142,23 @@ export function registerSocketHandlers(io: Server) {
           data: {
             sessionId,
             role: "SYSTEM",
-            content:
-              "Connecting you to a human agent. Please hold on a moment...",
+            content: "Connecting you to a human agent. Please hold on...",
           },
         });
 
         io.to(`session:${sessionId}`).emit("new_message", sysMsg);
-        io.to(`session:${sessionId}`).emit("status_change", {
-          status: "PENDING_HUMAN",
-        });
-
-        await queueHandoff(
-          sessionId,
-          lastUserMsg?.content ?? "User requested a human agent"
-        );
+        io.to(`session:${sessionId}`).emit("status_change", { status: "PENDING_HUMAN" });
+        await queueHandoff(sessionId, lastUserMsg?.content ?? "User requested agent");
       } catch (err) {
         logger.error("request_human error", { err });
       }
     });
 
-    // ── AGENT: send a message ──────────────────────────────────────────
+    // ── AGENT: send message ───────────────────────────────────────────
     socket.on("agent_message", async ({ sessionId, content }) => {
       try {
         const agentId = socket.data.agentId;
         if (!agentId || !content?.trim()) return;
-
         const msg = await prisma.message.create({
           data: { sessionId, role: "AGENT", content: content.trim() },
         });
@@ -213,20 +168,14 @@ export function registerSocketHandlers(io: Server) {
       }
     });
 
-    // ── DISCONNECT: mark agent offline if no other sockets ────────────
+    // ── DISCONNECT ────────────────────────────────────────────────────
     socket.on("disconnect", async () => {
       const { agentId, role } = socket.data;
       if (role === "agent" && agentId) {
-        // Wait a moment then check if agent has other active sockets
         setTimeout(async () => {
           const sockets = await io.in(`agent:${agentId}`).fetchSockets();
           if (sockets.length === 0) {
-            await prisma.agent
-              .update({
-                where: { id: agentId },
-                data: { isOnline: false },
-              })
-              .catch(() => {});
+            await prisma.agent.update({ where: { id: agentId }, data: { isOnline: false } }).catch(() => {});
             await redis.srem("online_agents", agentId);
             logger.info("Agent went offline", { agentId });
           }
